@@ -695,6 +695,41 @@ header{
     .header__menu__nav li:nth-child(3){transition-delay: .3s;}
     .header__menu__nav li:nth-child(4){transition-delay: .4s;}
 
+    .structure_ia{
+        display: none;
+    }
+
+    .structure__main{
+        width: 100%;
+    }
+
+    .info{
+        height: unset;
+        gap: 5vh;
+    }
+
+    .info__steps{
+        flex-direction: column;
+        gap: 5vh;
+        height: unset;
+    }
+    
+    .builder__components__chipset__container{
+        flex-direction: column;
+    }
+
+    .builder__components__chipset__container__select{
+        width: unset;
+    }
+
+    .chipset__img {
+        justify-content: center;
+    }
+
+    .builder__components__chipset__container__select img{
+        width: 40%;
+    }
 }
 
 /* End Mobile */
+
