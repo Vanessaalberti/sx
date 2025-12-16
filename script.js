@@ -357,8 +357,13 @@ async function cargarGraficas() { // Usamos 'cargarGraficas' si prefieres 'grafi
 // ===============================
 // RENDERIZAR GPUs EN LA LISTA
 // ===============================
+// ===============================
+// RENDERIZAR GPUs EN LA LISTA (CON CORRECCIÓN DE IMAGEN)
+// ===============================
 function renderGraficas(graficas) {
-    const contenedor = document.getElementById("seccion-grafica"); // Asegúrate que este ID exista en tu HTML
+    // Nota: El ID del contenedor debe ser 'seccion-graficas' (en plural),
+    // pero estoy manteniendo 'seccion-grafica' porque lo tienes así en el código
+    const contenedor = document.getElementById("seccion-grafica"); 
     contenedor.innerHTML = "";
 
     if (graficas.length === 0) {
@@ -370,10 +375,14 @@ function renderGraficas(graficas) {
     }
 
     graficas.forEach(g => {
+        // CORRECCIÓN DE IMAGEN: Usamos || (OR) en lugar de ?? (Nullish Coalescing)
+        // para asegurar que el 'default' se use si g.imagen es una cadena vacía ("").
+        const imagenSrc = g.imagen || 'img/grafica/gpu_default.png';
+
         contenedor.innerHTML += `
         <li class="builder__components__choose--lista">
             <img 
-                src="${g.imagen ?? 'img/gpu/gpu_default.png'}"
+                src="${imagenSrc}"
                 class="builder__info"
                 data-id="${g.id}"
                 data-tipo="grafica" 
@@ -385,7 +394,7 @@ function renderGraficas(graficas) {
                     data-id="${g.id}"
                     data-tipo="grafica"
                 >
-                    ${g.nombre}
+                    ${g.modelo}
                 </h3>
                 <p 
                     class="builder__info"
@@ -584,6 +593,54 @@ function generarModalRAM(r) {
     modal.classList.add("modal--show");
 }
 
+// ===========================================================
+// MODAL DE TARJETA GRÁFICA (GPU)
+// ===========================================================
+function generarModalGPU(g) {
+    // Asegúrate de que 'modalContainer' y 'modal' existen en el scope global
+    // Si usas el operador '||' es para que funcione si la DB tiene cadena vacía ('')
+    const imagenSrc = g.imagen || 'img/grafica/gpu_default.png';
+
+    modalContainer.innerHTML = `
+        <img src="${imagenSrc}">
+
+        <div class="modal__side">
+            <h2>${g.modelo}</h2> 
+            <h3>Donde comprar:</h3>
+            <ul id="preciosGPU"></ul>
+        </div>
+
+        <div class="modal__text">
+            <h3>Especificaciones de la GPU</h3>
+            <div>
+                <ul>
+                    <li><p><b>Marca (Chipset):</b> ${g.marca}</p></li>
+                    <li><p><b>Modelo:</b> ${g.modelo}</p></li>
+                    <li><p><b>Memoria VRAM:</b> ${g.vram_gb} GB</p></li>
+                    <li><p><b>Tipo de VRAM:</b> ${g.tipo_vram}</p></li>
+                </ul>
+                <hr>
+                <h3>Requisitos y Dimensiones</h3>
+                <ul>
+                    <li><p><b>Consumo Máx. (TDP):</b> ${g.consumo_watts} Watts</p></li>
+                    <li><p><b>Pines de Alimentación:</b> ${g.pin_power}</p></li>
+                    <li><p><b>Requisito de Fuente:</b> ${g.requisitos_fuente_watts} Watts</p></li>
+                    <li><p><b>Versión PCI-E:</b> ${g.pci_version}</p></li>
+                    <li><p><b>Largo (aprox.):</b> ${g.largo_mm} mm</p></li>
+                    <li><p><b>Slots ocupados:</b> ${g.ancho_slots}</p></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="modal__buttons">
+            <label data-select="grafica" data-id="${g.id}" class="select-label">Seleccionar</label>
+            <a class="modal__close">Cerrar</a>
+        </div>
+    `;
+
+    // Muestra el modal
+    modal.classList.add("modal--show");
+}
 
 
 // ===========================================================
