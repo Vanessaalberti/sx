@@ -22,115 +22,580 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- código del builder ---
-// ======== SECCIÓN: MOSTRAR AMD / INTEL ==========
-const radios = document.querySelectorAll('input[name="builder__chipset"]');
-const amdList = document.getElementById('amd_list');
-const intelList = document.getElementById('intel_list');
+    // Prueba animacion index //
+    const elements = document.querySelectorAll(".about-cont .imagen-about, .about-texts p");
 
-function ocultarTodo() {
-  amdList.style.display = 'none';
-  intelList.style.display = 'none';
-}
-ocultarTodo();
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add("about-visible");
+            } else {
+                entry.target.classList.remove("about-visible");
+            }
+        });
+    }, {
+        threshold: 0.1,          // Se considera "visible" con el 10%
+        rootMargin: "-150px 0px" // 🔥 Más tarde en pantalla = animación precisa
+    });
 
-radios.forEach(radio => {
-  radio.addEventListener('change', function() {
-    if (this.value === 'amd') {
-      amdList.style.display = 'flex';
-      intelList.style.display = 'none';
-    } else if (this.value === 'intel') {
-      intelList.style.display = 'flex';
-      amdList.style.display = 'none';
-    } else {
-      ocultarTodo();
-    }
-  });
+    elements.forEach(el => observer.observe(el));
+
+    const items = document.querySelectorAll(".timeline__item");
+
+const timelineItems = document.querySelectorAll(".timeline__item");
+
+const timelineObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        const el = entry.target;
+
+        // RIGHT SIDE
+        if (el.classList.contains("right")) {
+            if (entry.isIntersecting) {
+                el.classList.remove("hidden-right");
+                el.classList.add("appear-right");
+            } else {
+                el.classList.remove("appear-right");
+                el.classList.add("hidden-right");
+            }
+        }
+
+        // LEFT SIDE
+        if (el.classList.contains("left")) {
+            if (entry.isIntersecting) {
+                el.classList.remove("hidden-left");
+                el.classList.add("appear-left");
+            } else {
+                el.classList.remove("appear-left");
+                el.classList.add("hidden-left");
+            }
+        }
+    });
+}, { threshold: 0.25 ,
+  rootMargin: "0px 0px -20% 0px"
 });
+
+
+timelineItems.forEach(item => timelineObserver.observe(item));
+
+
+
+
+    // --- código del builder ---
+
+    const API_BASE_URL = "https://mi-backend-php-sx.onrender.com/api";
+
+// ===============================
+// CARGAR CPUs SEGÚN MARCA
+// ===============================
+async function cargarCPUs(marca) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/get_cpu.php?marca=${marca}`);
+        const cpus = await response.json();
+        renderCPUs(cpus);
+    } catch (error) {
+        console.error("Error cargando CPUs:", error);
+    }
+}
+
+// ===============================
+// RENDERIZAR CPUs EN LA LISTA
+// ===============================
+function renderCPUs(cpus) {
+    const lista = document.getElementById("cpu_list");
+    lista.innerHTML = "";
+
+    if (cpus.length === 0) {
+        lista.innerHTML = "<p>Elegi un chipset.</p>";
+        return;
+    }
+
+    cpus.forEach(cpu => {
+        lista.innerHTML += `
+        <li class="builder__components__choose--lista">
+
+            <img 
+                src="${cpu.imagen ?? 'img/procesadores/cpu_default.png'}"
+                class="builder__info builder__procesador_image"
+                data-id="${cpu.id}" 
+                data-tipo="cpu"
+            >
+
+            <div class="builder__components__choose--option">
+
+                <h3 
+                    class="builder__info"
+                    data-id="${cpu.id}" 
+                    data-tipo="cpu"
+                >
+                    ${cpu.nombre}
+                </h3>
+
+                <p 
+                    class="builder__info"
+                    data-id="${cpu.id}" 
+                    data-tipo="cpu"
+                >
+                    Más info
+                </p>
+
+                <input type="radio"
+                    name="builder__cpu"
+                    id="cpu-${cpu.id}"
+                    value="${cpu.socket}"
+                >
+                <label data-select="cpu" data-id="${cpu.id}" class="${cpu.socket} select-label">Seleccionar</label>
+            </div>
+        </li>`;
+    });
+}
+
+
+// ===============================
+// CUANDO SE SELECCIONA AMD O INTEL
+// ===============================
+document.querySelectorAll('input[name="builder__chipset"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+
+        const marcaElegida = radio.value; // <= AHORA FUNCIONA
+
+        if (marcaElegida) {
+            cargarCPUs(marcaElegida);
+        }
+    });
+});
+
+
 
 
 // ======== SECCIÓN: COMPATIBILIDAD DE MOTHERBOARDS ==========
-const procesadores = document.querySelectorAll('input[name="builder__procesador"]');
-const motherboardsContainer = document.querySelector('.builder__motherboards');
-const motherboards = document.querySelectorAll('.builder__motherboards > li'); // solo los visibles
-motherboardsContainer.style.display = 'none'; // Ocultar todos al inicio
+// ===============================
+// CARGAR MOTHERBOARDS DESDE BACKEND
+// ===============================
+async function cargarMotherboards(socket) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/get_mother.php?socket=${socket}`);
+        const mothers = await response.json();
+        renderMotherboards(mothers);
+    } catch (error) {
+        console.error("Error cargando motherboards:", error);
+    }
+}
 
-procesadores.forEach(proce => {
-  proce.addEventListener('change', () => {
-    const socketSeleccionado = proce.value; // ej: "am5", "am4", "lga1700"
+function renderMotherboards(mothers) {
+    const contenedor = document.getElementById("seccion-motherboards");
+    contenedor.innerHTML = "";
 
-    // Mostrar el contenedor solo si hay selección
-    if (!socketSeleccionado) {
-      motherboardsContainer.style.display = 'none';
-      return;
-    } else {
-      motherboardsContainer.style.display = 'flex';
+    if (mothers.length === 0) {
+        contenedor.innerHTML = `
+            <li class="sin-resultados">
+                <p>No hay motherboards compatibles.</p>
+            </li>`;
+        return;
     }
 
-    const compatibles = [];
-    const incompatibles = [];
+    mothers.forEach(m => {
+        contenedor.innerHTML += `
+        <li class="builder__components__choose--lista">
 
-    motherboards.forEach(mother => {
-      const esCompatible = mother.id === socketSeleccionado;
-      const input = mother.querySelector('input[type="radio"], input[type="checkbox"]');
+            <img 
+                src="${m.imagen ?? 'img/mother/mother_default.webp'}"
+                class="builder__info builder__mother_image"
+                data-id="${m.id}"
+                data-tipo="mother"
+            >
 
-      if (esCompatible) {
-        mother.classList.remove('incompatible');
-        mother.classList.add('compatible');
-        compatibles.push(mother);
-      } else {
-        mother.classList.add('incompatible');
-        mother.classList.remove('compatible');
-        incompatibles.push(mother);
+            <div class="builder__components__choose--option">
+                
+                <h3 
+                    class="builder__info"
+                    data-id="${m.id}"
+                    data-tipo="mother"
+                >
+                    ${m.nombre}
+                </h3>
 
-        // Si estaba seleccionada y ahora es incompatible → deseleccionarla
-        if (input && input.checked) {
-          input.checked = false;
+                <p 
+                    class="builder__info"
+                    data-id="${m.id}"
+                    data-tipo="mother"
+                >
+                    Más info
+                </p>
 
-          // También eliminar de la sección de la derecha
-          const listaSeleccion = document.querySelector(".structure_ia_seleccion ul");
-          if (listaSeleccion) {
-            const li = Array.from(listaSeleccion.querySelectorAll("li"))
-              .find(li => li.querySelector("h3").textContent.includes("Motherboard"));
-            if (li) {
-              const p = li.querySelector("p");
-              p.textContent = "No seleccionado";
-              p.style.color = "var(--secondary-text)";
-              p.style.fontWeight = "normal";
-            }
-          }
-        }
-      }
+                <input type="radio"
+                    name="builder__mother"
+                    id="mother-${m.id}"
+                    value="${m.socket}"
+                    data-tipo_memoria="${m.tipo_memoria}"
+                >
+                <label data-select="mother" data-id="${m.id}" class="select-label">Seleccionar</label>
+            </div>
+        </li>`;
     });
+}
 
-    // Reordenar: primero las compatibles, luego las incompatibles
-    motherboardsContainer.innerHTML = '';
-    compatibles.forEach(m => motherboardsContainer.appendChild(m));
-    incompatibles.forEach(m => motherboardsContainer.appendChild(m));
-  });
+// ===============================
+// EVENTO: CUANDO SE SELECCIONA UN PROCESADOR
+// ===============================
+document.addEventListener("change", e => {
+    if (e.target.name === "builder__cpu") {
+
+        const socketSeleccionado = e.target.value; // AM5 / AM4 / LGA1700...
+
+        const motherboardsContainer = document.querySelector('.builder__motherboards');
+
+        if (!socketSeleccionado) {
+            motherboardsContainer.style.display = "none";
+            return;
+        }
+
+        motherboardsContainer.style.display = "flex";
+
+        // Cargar motherboards desde backend
+        cargarMotherboards(socketSeleccionado);
+    }
 });
+
+async function cargarRAM(tipoMemoria) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/get_ram.php?tipo=${tipoMemoria}`);
+        const rams = await response.json();
+        renderRAM(rams);
+    } catch (error) {
+        console.error("Error cargando RAM:", error);
+    }
+}
+
+function renderRAM(rams) {
+    const contenedor = document.getElementById("seccion-ram");
+    contenedor.innerHTML = "";
+
+    if (rams.length === 0) {
+        contenedor.innerHTML = `
+            <li class="sin-resultados">
+                <p>No hay memorias RAM compatibles.</p>
+            </li>`;
+        return;
+    }
+
+    rams.forEach(r => {
+        contenedor.innerHTML += `
+        <li class="builder__components__choose--lista">
+
+            <img 
+                src="${r.imagen ?? 'img/ram/ram_default.png'}"
+                class="builder__info"
+                data-id="${r.id}"
+                data-tipo="ram"
+            >
+
+            <div class="builder__components__choose--option">
+                
+                <h3 
+                    class="builder__info"
+                    data-id="${r.id}"
+                    data-tipo="ram"
+                >
+                    ${r.nombre}
+                </h3>
+
+                <p 
+                    class="builder__info"
+                    data-id="${r.id}"
+                    data-tipo="ram"
+                >
+                    Más info
+                </p>
+
+                <input type="radio"
+                    name="builder__ram"
+                    id="ram-${r.id}"
+                    value="${r.capacidad_gb}"
+                >
+
+                <label data-select="ram" data-id="${r.id}" class="select-label">Seleccionar</label>
+            </div>
+        </li>`;
+    });
+}
+
+// ===============================
+// EVENTO: CUANDO SE SELECCIONA UNA MOTHERBOARD
+// ===============================
+document.addEventListener("change", e => {
+    if (e.target.name === "builder__mother") {
+
+        const tipoMemoria = e.target.dataset.tipo_memoria; // DDR4 / DDR5
+        const ramContainer = document.querySelector('.builder__ram');
+
+        if (!tipoMemoria) {
+            ramContainer.style.display = "none";
+            return;
+        }
+
+        ramContainer.style.display = "flex";
+
+        // Cargar RAM compatibles
+        cargarRAM(tipoMemoria);
+    }
+});
+
+// ===============================
+// CARGAR TARJETAS GRÁFICAS (GPU) DESDE BACKEND
+// ===============================
+async function cargarGraficas() { // Usamos 'cargarGraficas' si prefieres 'grafica' en lugar de 'gpu'
+    try {
+        // Llama al endpoint get_grafica.php. No necesita parámetros.
+        const response = await fetch(`${API_BASE_URL}/get_grafica.php`); 
+        const graficas = await response.json();
+        renderGraficas(graficas);
+    } catch (error) {
+        console.error("Error cargando Gráficas:", error);
+    }
+}
+
+// ===============================
+// RENDERIZAR GPUs EN LA LISTA
+// ===============================
+function renderGraficas(graficas) {
+    const contenedor = document.getElementById("seccion-grafica"); // Asegúrate que este ID exista en tu HTML
+    contenedor.innerHTML = "";
+
+    if (graficas.length === 0) {
+        contenedor.innerHTML = `
+            <li class="sin-resultados">
+                <p>No hay tarjetas gráficas disponibles.</p>
+            </li>`;
+        return;
+    }
+
+    graficas.forEach(g => {
+        contenedor.innerHTML += `
+        <li class="builder__components__choose--lista">
+            <img 
+                src="${g.imagen ?? 'img/gpu/gpu_default.png'}"
+                class="builder__info"
+                data-id="${g.id}"
+                data-tipo="grafica" 
+            >
+
+            <div class="builder__components__choose--option">
+                <h3 
+                    class="builder__info"
+                    data-id="${g.id}"
+                    data-tipo="grafica"
+                >
+                    ${g.nombre}
+                </h3>
+                <p 
+                    class="builder__info"
+                    data-id="${g.id}"
+                    data-tipo="grafica"
+                >
+                    Más info
+                </p>
+
+                <input type="radio"
+                    name="builder__grafica"
+                    id="grafica-${g.id}"
+                    value="${g.id}" 
+                >
+                <label data-select="grafica" data-id="${g.id}" class="select-label">Seleccionar</label>
+            </div>
+        </li>`;
+    });
+}
+
+// ===============================
+// EVENTO: CUANDO SE SELECCIONA UNA RAM
+// ===============================
+document.addEventListener("change", e => {
+    if (e.target.name === "builder__ram") {
+
+        const ramSeleccionada = e.target.checked; // Solo verifica si está checkeada
+        const graficaContainer = document.querySelector('.builder__grafica'); // Asegúrate de tener este selector de contenedor
+
+        if (!ramSeleccionada) {
+            graficaContainer.style.display = "none";
+            return;
+        }
+
+        graficaContainer.style.display = "flex";
+
+        // Cargar TARJETAS GRÁFICAS
+        cargarGraficas(); // <--- ¡NUEVO PASO DE LÓGICA!
+    }
+});
+
+
 
     // --- código del modal ---
-const infoButtons = document.querySelectorAll('.builder__procesador_info');
+// ===========================================================
+//  MODAL GLOBAL
+// ===========================================================
+const modal = document.getElementById("modal");
+const modalContainer = modal.querySelector(".modal__container");
 
-infoButtons.forEach(button => {
-  const listItem = button.closest('.builder__components__choose--lista');
-  const modal = listItem.querySelector('.modal');
-  const closeBtn = modal.querySelector('.modal__close');
-  const selectBtn = modal.querySelector('.modal__buttons label');
+// ===========================================================
+//  DETECTOR UNIVERSAL DE MODALES
+// ===========================================================
+document.addEventListener("click", async function (e) {
 
-  button.addEventListener('click', (e) => {
+    // ¿Se clickeó un botón "Más info"?
+    if (!e.target.classList.contains("builder__info")) return;
+
     e.preventDefault();
-    modal.classList.add('modal--show');
-  });
-  closeBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    modal.classList.remove('modal--show');
-  });
-  selectBtn.addEventListener('click', () => {
-    modal.classList.remove('modal--show');
-  });
+
+    const tipo = e.target.dataset.tipo;   // cpu, mother, ram...
+    const id   = e.target.dataset.id;
+
+    if (!tipo || !id) return;
+
+    // === Llamar al backend correcto ===
+    const res = await fetch(`${API_BASE_URL}/get_${tipo}.php?id=${id}`);
+    const data = await res.json();
+
+    // === Abrir el modal correspondiente ===
+    if (tipo === "cpu") generarModalCPU(data);
+    if (tipo === "mother") generarModalMother(data);
+    if (tipo === "ram") generarModalRAM(data);
+    if (tipo === "gpu") generarModalGPU(data);
+    if (tipo === "psu") generarModalPSU(data);
 });
+
+// ===========================================================
+//  MODAL DE CPU
+// ===========================================================
+function generarModalCPU(cpu) {
+
+    modalContainer.innerHTML = `
+        <img src="${cpu.imagen ?? 'img/procesadores/cpu_default.png'}">
+
+        <div class="modal__side">
+            <h2>${cpu.nombre}</h2>
+            <h3>Donde comprar:</h3>
+            <ul id="preciosProce"></ul>
+        </div>
+
+        <div class="modal__text">
+            <h3>Lo que tenés que saber</h3>
+            <div>
+                <ul>
+                    <li><p><b>Socket:</b> ${cpu.socket}</p></li>
+                    <li><p><b>Frecuencia:</b> ${cpu.frecuencia_base} / ${cpu.frecuencia_turbo}</p></li>
+                    <li><p><b>Núcleos:</b> ${cpu.nucleos}</p></li>
+                    <li><p><b>Hilos:</b> ${cpu.hilos}</p></li>
+                    <li><p><b>Gráficos integrados:</b> ${cpu.graficos_integrados == 1 ? "Sí" : "No"}</p></li>
+                    <li><p><b>TDP:</b> ${cpu.tdp}</p></li>
+                    <li><p><b>Memoria:</b> ${cpu.tipo_memoria}</p></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="modal__buttons">
+            <label data-select="cpu" data-id="${cpu.id}" class="${cpu.socket} select-label">Seleccionar</label>
+            <a class="modal__close">Cerrar</a>
+        </div>
+    `;
+
+    modal.classList.add("modal--show");
+}
+
+// ===========================================================
+//  MODAL DE MOTHER
+// ===========================================================
+function generarModalMother(m) {
+
+    modalContainer.innerHTML = `
+        <img src="${m.imagen ?? 'img/mother/mother_default.webp'}">
+
+        <div class="modal__side">
+            <h2>${m.nombre}</h2>
+            <h3>Donde comprar:</h3>
+            <ul id="preciosMother"></ul>
+        </div>
+
+        <div class="modal__text modal_mother">
+            <h3>Lo que tenés que saber</h3>
+            <div>
+                <ul>
+                    <li><p><b>Marca:</b> ${m.marca}</p></li>
+                    <li><p><b>Socket:</b> ${m.socket}</p></li>
+                    <li><p><b>Chipset:</b> ${m.chipset}</p></li>
+                    <li><p><b>Formato:</b> ${m.form_factor}</p></li>
+                    <li><p><b>Tipo de memoria:</b> ${m.tipo_memoria}</p></li>
+                    <li><p><b>Memoria maxima:</b> ${m.max_memoria}</p></li>
+                    <li><p><b>Slots de memoria:</b> ${m.slots_memoria}</p></li>
+                    <li><p><b>Velocidad de memoria:</b> ${m.velocidad_memoria}</p></li>
+                    <li><p><b>Puertos m2:</b> ${m.puertos_m2}</p></li>
+                    <li><p><b>Puertos sata:</b> ${m.puertos_sata}</p></li>
+                    <li><p><b>PCI express:</b> ${m.pci_express}</p></li>
+                    <li><p><b>WIFI:</b> ${m.wifi == 1 ? "Sí" : "No"}</p></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="modal__buttons">
+            <label data-select="mother" data-id="${m.id}" class="select-label">Seleccionar</label>
+            <a class="modal__close">Cerrar</a>
+        </div>
+    `;
+
+    modal.classList.add("modal--show");
+}
+
+// ===========================================================
+//  MODAL DE RAM
+// ===========================================================
+function generarModalRAM(r) {
+
+    modalContainer.innerHTML = `
+        <img src="${r.imagen ?? 'img/ram/ram_default.png'}">
+
+        <div class="modal__side">
+            <h2>${r.nombre}</h2>
+            <h3>Donde comprar:</h3>
+            <ul id="preciosRAM"></ul>
+        </div>
+
+        <div class="modal__text">
+            <h3>Lo que tenés que saber</h3>
+            <div>
+                <ul>
+                    <li><p><b>Marca:</b> ${r.marca}</p></li>
+                    <li><p><b>Tipo de memoria:</b> ${r.tipo_memoria}</p></li>
+                    <li><p><b>Capacidad:</b> ${r.capacidad_gb} GB</p></li>
+                    <li><p><b>Velocidad:</b> ${r.velocidad_mhz} MHz</p></li>
+                    <li><p><b>Latencia (CL):</b> ${r.latencia_cl}</p></li>
+                    <li><p><b>Voltaje:</b> ${r.voltaje}</p></li>
+                    <li><p><b>Kits:</b> ${r.kits}</p></li>
+                    <li><p><b>Soporte XMP:</b> ${r.soporte_xmp == 1 ? "Sí" : "No"}</p></li>
+                    <li><p><b>Soporte Expo:</b> ${r.soporte_expo == 1 ? "Sí" : "No"}</p></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="modal__buttons">
+            <label data-select="ram" data-id="${r.id}" class="select-label">Seleccionar</label>
+            <a class="modal__close">Cerrar</a>
+        </div>
+    `;
+
+    modal.classList.add("modal--show");
+}
+
+
+
+// ===========================================================
+//  CERRAR MODAL
+// ===========================================================
+document.addEventListener("click", function (e) {
+    if (e.target.classList.contains("modal__close") || e.target.id === "modal") {
+        modal.classList.remove("modal--show");
+    }
+});
+
+
     // --- fin código del modal ---
 });
 
@@ -206,44 +671,71 @@ fetch(apiUrl)
 
 // --- Fin código de precios ---
 
-// --- Código de seleccion de componentes ---
-const labels = document.querySelectorAll(".builder__components__choose--lista label");
+// ===========================================================
+// SELECCIÓN DE COMPONENTES (cards + modal unificado)
+// ===========================================================
+document.addEventListener("click", function(e) {
+    // Solo funciona si clickeaste un botón de tipo “Seleccionar”
+    if (!e.target.matches("[data-select]")) return;
 
-  labels.forEach(label => {
-    label.addEventListener("click", () => {
-      const inputId = label.getAttribute("for");
-      const input = document.getElementById(inputId);
-      if (!input) return;
+    const tipo = e.target.dataset.select;     // cpu / mother / ram / gpu / etc
+    const id = e.target.dataset.id;           // ID del componente
 
-      // Encuentra el nombre del producto
-      const nombreProducto = label.closest(".builder__components__choose--lista").querySelector("h3").textContent;
+    // Buscar el input correspondiente al radio
+    const input = document.getElementById(`${tipo}-${id}`);
+    if (!input) return;
 
-      // Detecta el tipo de componente por el nombre del input
-      let tipo = "";
-      if (input.name.includes("procesador")) tipo = "Procesador";
-      else if (input.name.includes("RAM")) tipo = "RAM";
-      else if (input.name.includes("mother")) tipo = "Motherboard";
-      else if (input.name.includes("grafica")) tipo = "Tarjeta Grafica";
-      else if (input.name.includes("almacenamiento")) tipo = "Almacenamiento";
-      else if (input.name.includes("cooler")) tipo = "Cooler";
-      else if (input.name.includes("fuente")) tipo = "Fuente";
-      else if (input.name.includes("gabinete")) tipo = "Gabinete";
+    // Activar el radio
+    input.checked = true;
+    input.dispatchEvent(new Event("change", { bubbles: true })); // sigue el flujo normal
 
-      // Actualiza el texto en la lista de selección
-      const listaSeleccion = document.querySelector(".structure_ia_seleccion ul");
-      if (listaSeleccion) {
-        const li = Array.from(listaSeleccion.querySelectorAll("li"))
-          .find(li => li.querySelector("h3").textContent.includes(tipo));
-
-        if (li) {
-          const p = li.querySelector("p");
-          p.textContent = nombreProducto;
-          p.style.color = "#2ecc71"; // Verde para indicar selección
-          p.style.fontWeight = "bold";
-        }
-      }
+    // ===========================================================
+    // BORDES SELECCIONADOS
+    // ===========================================================
+    document.querySelectorAll(`input[name="builder__${tipo}"]`).forEach(inp => {
+        const li = inp.closest(".builder__components__choose--lista");
+        if (li) li.classList.remove("seleccionado");
     });
-  });
+
+    const liActual = input.closest(".builder__components__choose--lista");
+    if (liActual) liActual.classList.add("seleccionado");
+
+    // ===========================================================
+    // ACTUALIZAR NOMBRE EN LA LISTA DERECHA
+    // ===========================================================
+    const nombreProducto =
+        liActual.querySelector("h3")?.textContent ??
+        "Producto seleccionado";
+
+    let textoTipo = "";
+    switch (tipo) {
+        case "cpu": textoTipo = "Procesador"; break;
+        case "mother": textoTipo = "Motherboard"; break;
+        case "ram": textoTipo = "RAM"; break;
+        case "grafica": textoTipo = "Tarjeta Grafica"; break;
+        case "almacenamiento": textoTipo = "Almacenamiento"; break;
+        case "cooler": textoTipo = "Cooler"; break;
+        case "fuente": textoTipo = "Fuente"; break;
+        case "gabinete": textoTipo = "Gabinete"; break;
+    }
+
+    // Buscar el <li> correspondiente en la estructura de la derecha
+    const li = Array.from(document.querySelectorAll(".structure_ia_seleccion li"))
+                    .find(x => x.querySelector("h3").textContent.includes(textoTipo));
+
+    if (li) {
+        const p = li.querySelector("p");
+        p.textContent = nombreProducto;
+        p.style.color = "#2ecc71";
+        p.style.fontWeight = "bold";
+    }
+
+    // Cerrar modal si está abierto
+    if (modal.classList.contains("modal--show")) {
+        modal.classList.remove("modal--show");
+    }
+
+});
 
   // --- Fin código de seleccion de componentes ---
 
