@@ -468,7 +468,7 @@ document.addEventListener("click", async function (e) {
     if (tipo === "cpu") generarModalCPU(data);
     if (tipo === "mother") generarModalMother(data);
     if (tipo === "ram") generarModalRAM(data);
-    if (tipo === "gpu") generarModalGPU(data);
+    if (tipo === "grafica") generarModalGPU(data);
     if (tipo === "psu") generarModalPSU(data);
 });
 
@@ -618,10 +618,6 @@ function generarModalGPU(g) {
                     <li><p><b>Modelo:</b> ${g.modelo}</p></li>
                     <li><p><b>Memoria VRAM:</b> ${g.vram_gb} GB</p></li>
                     <li><p><b>Tipo de VRAM:</b> ${g.tipo_vram}</p></li>
-                </ul>
-                <hr>
-                <h3>Requisitos y Dimensiones</h3>
-                <ul>
                     <li><p><b>Consumo Máx. (TDP):</b> ${g.consumo_watts} Watts</p></li>
                     <li><p><b>Pines de Alimentación:</b> ${g.pin_power}</p></li>
                     <li><p><b>Requisito de Fuente:</b> ${g.requisitos_fuente_watts} Watts</p></li>
@@ -795,4 +791,5 @@ document.addEventListener("click", function(e) {
 });
 
   // --- Fin código de seleccion de componentes ---
+
 
