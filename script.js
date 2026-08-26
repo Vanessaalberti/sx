@@ -82,7 +82,7 @@ timelineItems.forEach(item => timelineObserver.observe(item));
 
     // --- código del builder ---
 
-    const API_BASE_URL = "https://mi-backend-php-sx.onrender.com/api";
+    const API_BASE_URL = "https://mi-backend-php-sx-z4mm.onrender.com/api";
 
 // ===============================
 // CARGAR CPUs SEGÚN MARCA
